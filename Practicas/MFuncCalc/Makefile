@@ -1,0 +1,31 @@
+PROY=mfcalc.out
+CFLAGS=-Wall
+COBJ=-c
+LINKF=-lfl -lm
+CC=gcc
+
+FLEXFILES=$(wildcard *.l)
+BISONFILES=$(wildcard *.y)
+CCFILES=TabSimb.c
+
+FLEXCFILES=lex.yy.c
+BISONCFILES=$(BISONFILES:.y=.tab.c)
+BISONHFILES=$(BISONFILES:.y=.tab.h)
+
+CFILES=$(BISONCFILES) $(FLEXCFILES) $(CCFILES)
+OBJTFILES=$(CFILES:.c=.o)
+
+all:${PROY}
+
+$(FLEXCFILES):${FLEXFILES}
+	flex ${FLEXFILES}
+$(BISONCFILES):${BISONFILES}
+	bison -d ${BISONFILES} --debug
+$(OBJTFILES):${CFILES}
+	${CC} ${COBJ} $^
+${PROY}:${OBJTFILES}
+	${CC} $^ -o $@ ${LINKF}
+
+
+clean:
+	@rm -f ${BISONCFILES} ${FLEXCFILES} ${OBJTFILES} ${BISONHFILES} ${PROY}

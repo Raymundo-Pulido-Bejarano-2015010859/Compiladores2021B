@@ -1,0 +1,49 @@
+.method protected onCreate(Landroid/os/Bundle;)V
+    .registers 10
+    .param p1, "savedInstanceState"    # Landroid/os/Bundle;
+
+    .line 11
+    invoke-super {p0, p1}, Landroidx/appcompat/app/AppCompatActivity;->onCreate(Landroid/os/Bundle;)V
+
+    .line 12
+    const v0, 0x7f0b001c
+
+    invoke-virtual {p0, v0}, Lcom/example/prueba1/MainActivity;->setContentView(I)V
+
+    .line 14		// long a = 10 ;
+    const-wide/16 v0, 0xa
+	
+    .line 15		// long b = 12;
+    .local v0, "a":J
+    const-wide/16 v2, 0xc
+
+    .line 16		// long c = 0;
+    .local v2, "b":J
+    const-wide/16 v4, 0x0
+
+    .line 18		// c = a + b;
+    .local v4, "c":J
+    add-long v4, v0, v2
+					//long res;
+    .line 21		// while (a>b)	{
+    :goto_11							// Identificador de salto
+    cmp-long v6, v0, v2					// Comparacion a,b
+
+    if-lez v6, :cond_19					// If para indicar el posible salto al identificador :cond_19
+
+    .line 22		// b = b + 1;
+    const-wide/16 v6, 0x1				// variable auxiliar para almacenar la constante 1
+
+    add-long/2addr v2, v6				// se hace la suma de la variable b mas 1(la variable auxiliar)
+
+    goto :goto_11						// Salto al indicador goto_11
+
+    .line 24		// res = b;
+    :cond_19
+    move-wide v6, v2					// Movemos el valor de b a v6 que sera res
+
+    .line 25							//Definimos v6 como res
+    .local v6, "res":J
+    return-void							//Salida de metodo
+.end method
+

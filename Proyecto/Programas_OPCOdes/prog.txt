@@ -1,0 +1,31 @@
+.method protected onCreate(Landroid/os/Bundle;)V
+    .registers 8
+    .param p1, "savedInstanceState"    # Landroid/os/Bundle;
+
+    .line 11	//super.onCreate(savedInstanceState);
+    invoke-super {p0, p1}, Landroidx/appcompat/app/AppCompatActivity;->onCreate(Landroid/os/Bundle;)V  
+
+    .line 12	//setContentView(R.layout.activity_main);
+    const v0, 0x7f0b001c
+
+    invoke-virtual {p0, v0}, Lcom/example/prueba1/MainActivity;->setContentView(I)V
+
+    .line 14	//long a = 10;
+    const-wide/16 v0, 0xa
+
+    .line 15 	//long b = 12;
+    .local v0, "a":J
+    const-wide/16 v2, 0xc
+
+    .line 16	//long c = 0;
+    .local v2, "b":J
+    const-wide/16 v4, 0x0
+
+    .line 18 	//c = a + b;
+    .local v4, "c":J
+    add-long v4, v0, v2
+
+    .line 19
+    return-void
+.end method
+

@@ -1,0 +1,8 @@
+ab|c
+a*b|c*a
+(ab)*
+(ab*|bEc)*(bc*|ab)(bc|a*)
+(ab|cb*|cb)*
+ab(c*d|ba*)
+ab(c*d|ba*)*(abc|d)|(bd*)(cd)*
+((ab*|ca*)*(abc|ac|a*)a)#

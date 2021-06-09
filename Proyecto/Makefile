@@ -1,0 +1,30 @@
+PROY=proyectoF.out
+CFLAGS=-Wall
+COBJ=-c
+LINKF=-lfl
+CC=gcc
+
+FLEXFILES=$(wildcard *.l)
+BISONFILES=$(wildcard *.y)
+
+FLEXCFILES=lex.yy.c
+BISONCFILES=$(BISONFILES:.y=.tab.c)
+BISONHFILES=$(BISONFILES:.y=.tab.h)
+
+CFILES=$(BISONCFILES) $(FLEXCFILES) 
+OBJTFILES=$(CFILES:.c=.o)
+
+all:${PROY}
+
+$(FLEXCFILES):${FLEXFILES}
+	flex ${FLEXFILES}
+$(BISONCFILES):${BISONFILES}
+	bison -d ${BISONFILES} 
+$(OBJTFILES):${CFILES}
+	${CC} ${COBJ} $^
+${PROY}:${OBJTFILES}
+	${CC} $^ -o $@ ${LINKF}
+
+
+clean:
+	@rm -f ${BISONCFILES} ${FLEXCFILES} ${OBJTFILES} ${BISONHFILES} ${PROY}

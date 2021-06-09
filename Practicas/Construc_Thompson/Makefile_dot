@@ -1,0 +1,21 @@
+PROY=png
+CFLAGS=-Tpng
+CC=dot
+ORIGFILES=$(wildcard *.gv)
+OBJFILES=$(ORIGFILES:.gv=.png)
+
+all:${PROY}
+
+# % es cualaquier archivo en la carpeta 
+%.png:%.gv
+	${CC} $<  ${CFLAGS} > $@
+# $< regresa la primer dependencia
+
+${PROY}:${OBJFILES}
+	@#open $^  
+# $^ Regresa la lista de dependencias completa
+
+.PHONY:clean
+
+clean:
+	@rm -f ${OBJFILES}
