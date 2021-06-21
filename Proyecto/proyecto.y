@@ -607,34 +607,31 @@ statement_list
 
 expression_statement
 	: ';'
-	| expression ';'						{		
-												//printf("%s",$1);
-												printf("expresion");	
-											}
+	| expression ';'						{	$$.ValorT = $2.ValorT; $$.tipoRR = $2.tipoRR;	}
 	;
 
 selection_statement
 	: IF '(' expression ')' statement		{
-												//printf(".line %d",numeroL);
-												//printf("%s",$3);		// lineas Condicion
-												//printf("%s",$5);		// lineas de statement
-												printf("lineas Condicion");
-												printf("lineas de statement");
-												printf(".line %d",numeroL);
-												printf(":cond_%d",numCond);
+												printf("%s\n",$3.ValorT);
+												printf("%s\n",$5.ValorT);
+												for(int i = 0; i < FaltaPorCond; i++){
+													printf(":cond_%d",numCond+i);
+												}
+												FaltaPorCond = 0;
 											}
 	;
 
 iteration_statement
 	: WHILE '(' expression ')' statement	{ 
-											  printf(".line %d", numeroL);
-											  printf(":goto_%d",numgo); 
-											  //printf("%s",$3);		//Incerto lineas de comparacion
-											  //printf("%s",$5);		//Incerto lineas de statements
-											  printf("Incerto lineas de comparacion");
-											  printf("Incerto lineas de statements");
-											  printf(".line %d",numeroL);
-											  printf(":cond_%d",numCond);
+												printf(":goto_%d",numgo);
+											  	printf("%s\n",$3.ValorT);
+												printf("%s\n",$5.ValorT);
+												printf("goto :goto_%d",numgo);
+												numgo++;
+												for(int i = 0; i < FaltaPorCond; i++){
+													printf(":cond_%d",numCond+i);
+												}
+												FaltaPorCond = 0;
 											}
 	;
 
