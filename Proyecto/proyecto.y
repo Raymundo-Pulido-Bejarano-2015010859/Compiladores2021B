@@ -10,7 +10,8 @@
 	int yylex(void);
 
 	int numeroL = 15;
-	int numCond = 20;
+	int numCond = 19;
+	int FaltaPorCond = 0;
 	int numgo = 20;
 	int indicador = 15;
 
@@ -19,9 +20,18 @@
 	symrec *sym_table;
 
 	typedef struct Regla{
-		int tipoRR ;		// 0 Difereccion, 1 constantes, 2 lineas de codigo
+		int tipoRR ;		// 0 Difereccion, 1 constantes, 2 lineas de codigo,  5 vacio
 		char *ValorT ;
+		int tipoV;			// 0 int, 1 char,
+		char *valAux; 
 	}regla;
+
+	symrec *getsymDir(char const *dir) {
+	for (symrec *p = sym_table; p; p = p->next)
+		if (strcmp (p->VarDir, dir) == 0)	
+			return p;
+	return NULL;
+}
 
 %}
 
@@ -37,7 +47,23 @@
 
 
 %nterm <regla> expression 
+%nterm <regla> postfix_expression
 %nterm <regla> primary_expression
+%nterm <regla> multiplicative_expression
+%nterm <regla> additive_expression
+%nterm <regla> relational_expression
+%nterm <regla> equality_expression
+%nterm <regla> logical_and_expression
+%nterm <regla> logical_or_expression
+%nterm <regla> conditional_expression
+%nterm <regla> assignment_expression
+%nterm <regla> expression
+%nterm <regla> constant_expression
+%nterm <regla>
+%nterm <regla>
+%nterm <regla>
+%nterm <regla>
+%nterm <regla>
 
 
 
@@ -201,15 +227,185 @@ relational_expression
 	: additive_expression									{ $$.ValorT = $1.ValorT; $$.tipoRR = $1.tipoRR; }
 	| relational_expression '<' additive_expression			{
 																if($1.tipoRR == 0 && $3.tipoRR == 0){
-																	sprintf(aux,"cmp-long V0,%s,%s",$1.ValorT,$3.ValorT);
+																	sprintf(aux,"if-lt %s,%s,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 0 && $3.tipoRR == 1){
+																	sprintf(aux,"const-wide/16 V0,%s\nif-lt V0,%s,:cond_%d",$3.ValorT,$1.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 1 && $3.tipoRR == 0){
+																	sprintf(aux,"const-wide/16 V0,%s\nif-lt V0,%s,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 2 && $3.tipoRR == 2 ){
+																	if (strlen($1.ValorT)+strlen($3.ValorT) > lenght){
+																		lenght = (strlen($1.ValorT)+strlen($3.ValorT)) *2;
+																		aux = (char*)realloc(aux,sizeof(char)*lenght);
+																	}
+																	sprintf(aux,"%s\nmove-wide V1,V0\n%s\nif-lt V0,V1,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	FaltaPorCond++;
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																}
+															}
+	| relational_expression '>' additive_expression			{
+																if($1.tipoRR == 0 && $3.tipoRR == 0){
+																	sprintf(aux,"if-gt %s,%s,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 0 && $3.tipoRR == 1){
+																	sprintf(aux,"const-wide/16 V0,%s\nif-gt V0,%s,:cond_%d",$3.ValorT,$1.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 1 && $3.tipoRR == 0){
+																	sprintf(aux,"const-wide/16 V0,%s\nif-gt V0,%s,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 2 && $3.tipoRR == 2 ){
+																	if (strlen($1.ValorT)+strlen($3.ValorT) > lenght){
+																		lenght = (strlen($1.ValorT)+strlen($3.ValorT)) *2;
+																		aux = (char*)realloc(aux,sizeof(char)*lenght);
+																	}
+																	sprintf(aux,"%s\nmove-wide V1,V0\n%s\nif-gt V0,V1,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	FaltaPorCond++;
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																}
+															}
+	| relational_expression LE_OP additive_expression		{
+																if($1.tipoRR == 0 && $3.tipoRR == 0){
+																	sprintf(aux,"if-le %s,%s,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 0 && $3.tipoRR == 1){
+																	sprintf(aux,"const-wide/16 V0,%s\nif-le V0,%s,:cond_%d",$3.ValorT,$1.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 1 && $3.tipoRR == 0){
+																	sprintf(aux,"const-wide/16 V0,%s\nif-le V0,%s,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 2 && $3.tipoRR == 2 ){
+																	if (strlen($1.ValorT)+strlen($3.ValorT) > lenght){
+																		lenght = (strlen($1.ValorT)+strlen($3.ValorT)) *2;
+																		aux = (char*)realloc(aux,sizeof(char)*lenght);
+																	}
+																	sprintf(aux,"%s\nmove-wide V1,V0\n%s\nif-le V0,V1,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	FaltaPorCond++;
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																}
+															}
+	| relational_expression GE_OP additive_expression		{
+																if($1.tipoRR == 0 && $3.tipoRR == 0){
+																	sprintf(aux,"if-ge %s,%s,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 0 && $3.tipoRR == 1){
+																	sprintf(aux,"const-wide/16 V0,%s\nif-ge V0,%s,:cond_%d",$3.ValorT,$1.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 1 && $3.tipoRR == 0){
+																	sprintf(aux,"const-wide/16 V0,%s\nif-ge V0,%s,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 2 && $3.tipoRR == 2 ){
+																	if (strlen($1.ValorT)+strlen($3.ValorT) > lenght){
+																		lenght = (strlen($1.ValorT)+strlen($3.ValorT)) *2;
+																		aux = (char*)realloc(aux,sizeof(char)*lenght);
+																	}
+																	sprintf(aux,"%s\nmove-wide V1,V0\n%s\nif-ge V0,V1,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	FaltaPorCond++;
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																}
+															}
+	;
+
+equality_expression
+	: relational_expression									{ $$.ValorT = $1.ValorT; $$.tipoRR = $1.tipoRR; }
+	| equality_expression EQ_OP relational_expression		{
+																if($1.tipoRR == 0 && $3.tipoRR == 0){
+																	sprintf(aux,"if-eq %s,%s,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 0 && $3.tipoRR == 1){
+																	sprintf(aux,"const-wide/16 V0,%s\nif-eq V0,%s,:cond_%d",$3.ValorT,$1.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 1 && $3.tipoRR == 0){
+																	sprintf(aux,"const-wide/16 V0,%s\nif-eq V0,%s,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 2 && $3.tipoRR == 2 ){
+																	if (strlen($1.ValorT)+strlen($3.ValorT) > lenght){
+																		lenght = (strlen($1.ValorT)+strlen($3.ValorT)) *2;
+																		aux = (char*)realloc(aux,sizeof(char)*lenght);
+																	}
+																	sprintf(aux,"%s\nmove-wide V1,V0\n%s\nif-eq V0,V1,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	FaltaPorCond++;
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																}
+															}
+	| equality_expression NE_OP relational_expression		{
+																if($1.tipoRR == 0 && $3.tipoRR == 0){
+																	sprintf(aux,"if-ne %s,%s,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 0 && $3.tipoRR == 1){
+																	sprintf(aux,"const-wide/16 V0,%s\nif-ne V0,%s,:cond_%d",$3.ValorT,$1.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 1 && $3.tipoRR == 0){
+																	sprintf(aux,"const-wide/16 V0,%s\nif-ne V0,%s,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																	FaltaPorCond++;
+																}else if($1.tipoRR == 2 && $3.tipoRR == 2 ){
+																	if (strlen($1.ValorT)+strlen($3.ValorT) > lenght){
+																		lenght = (strlen($1.ValorT)+strlen($3.ValorT)) *2;
+																		aux = (char*)realloc(aux,sizeof(char)*lenght);
+																	}
+																	sprintf(aux,"%s\nmove-wide V1,V0\n%s\nif-ne V0,V1,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
+																	FaltaPorCond++
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																}
+															}
+	;
+
+logical_and_expression	
+	: equality_expression									{ $$.ValorT = $1.ValorT; $$.tipoRR = $1.tipoRR; }
+	| logical_and_expression AND_OP equality_expression		{
+																if($1.tipoRR == 0 && $3.tipoRR == 0){
+																	sprintf(aux,"and-long %s,%s,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
 																	$$.ValorT = strdup(aux);
 																	$$.tipoRR = 2;
 																}else if($1.tipoRR == 0 && $3.tipoRR == 1){
-																	sprintf(aux,"const-wide/16 V0,%s\ncmp-long V0,%s,V0",$3.ValorT,$1.ValorT);
+																	sprintf(aux,"const-wide/16 V0,%s\nand-long V0,%s,:cond_%d",$3.ValorT,$1.ValorT,numCond+FaltaPorCond);
 																	$$.ValorT = strdup(aux);
 																	$$.tipoRR = 2;
 																}else if($1.tipoRR == 1 && $3.tipoRR == 0){
-																	sprintf(aux,"const-wide/16 V0,%s\ncmp-long V0,%s,V0",$1.ValorT,$3.ValorT);
+																	sprintf(aux,"const-wide/16 V0,%s\nand-long V0,%s,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
 																	$$.ValorT = strdup(aux);
 																	$$.tipoRR = 2;
 																}else if($1.tipoRR == 2 && $3.tipoRR == 2 ){
@@ -217,123 +413,196 @@ relational_expression
 																		lenght = (strlen($1.ValorT)+strlen($3.ValorT)) *2;
 																		aux = (char*)realloc(aux,sizeof(char)*lenght);
 																	}
-																	sprintf(aux,"%s\nmove-wide V1,V0\n%s\ncmp-long V0,V1,V0",$1.ValorT,$3.ValorT);
+																	sprintf(aux,"%s\nmove-wide V1,V0\n%s\nand-long V0,V1,:cond_%d",$1.ValorT,$3.ValorT,numCond+FaltaPorCond);
 																	$$.ValorT = strdup(aux);
 																	$$.tipoRR = 2;
 																}
 															}
-	| relational_expression '>' additive_expression
-	| relational_expression LE_OP additive_expression
-	| relational_expression GE_OP additive_expression
-	;
-
-equality_expression
-	: relational_expression
-	| equality_expression EQ_OP relational_expression
-	| equality_expression NE_OP relational_expression
-	;
-
-logical_and_expression
-	: equality_expression
-	| logical_and_expression AND_OP equality_expression
 	;
 
 logical_or_expression
-	: logical_and_expression
-	| logical_or_expression OR_OP logical_and_expression
+	: logical_and_expression								{ $$.ValorT = $1.ValorT; $$.tipoRR = $1.tipoRR; }
+	| logical_or_expression OR_OP logical_and_expression	{
+																if($1.tipoRR == 0 && $3.tipoRR == 0){
+																	sprintf(aux,"or-long V0,%s,%s",$1.ValorT,$3.ValorT);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																}else if($1.tipoRR == 0 && $3.tipoRR == 1){
+																	sprintf(aux,"const-wide/16 V1,%s\nor-long V0,%s,V1",$3.ValorT,$1.ValorT);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																}else if($1.tipoRR == 1 && $3.tipoRR == 0){
+																	sprintf(aux,"const-wide/16 V1,%s\nor-long V0,V1,%s \n",$1.ValorT,$3.ValorT);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																}else if($1.tipoRR == 2 && $3.tipoRR == 2 ){
+																	if (strlen($1.ValorT)+strlen($3.ValorT) > lenght){
+																		lenght = (strlen($1.ValorT)+strlen($3.ValorT)) *2;
+																		aux = (char*)realloc(aux,sizeof(char)*lenght);
+																	}
+																	sprintf(aux,"%s\nmove-wide V1,V0\n%s\nor-long V0,V0,V1 ",$1.ValorT,$3.ValorT);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																}
+															}
 	;
 
 conditional_expression
-	: logical_or_expression
+	: logical_or_expression									{ $$.ValorT = $1.ValorT; $$.tipoRR = $1.tipoRR; }
 	;
 
 assignment_expression
-	: conditional_expression
-	| postfix_expression '=' assignment_expression
+	: conditional_expression								{ $$.ValorT = $1.ValorT; $$.tipoRR = $1.tipoRR; }
+	| postfix_expression '=' assignment_expression			{
+																if($1.tipoRR == 0 && $3.tipoRR == 0){
+																	sprintf(aux,"move-wide %s,%s \n",$1.ValorT,$3.ValorT);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																}else if($1.tipoRR == 0 && $3.tipoRR == 1){
+																	sprintf(aux,"const-wide/16 V0,%s\nmove-wide %s,V0 \n",$3.ValorT,$1.ValorT);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																}else if($1.tipoRR == 2 && $3.tipoRR == 2 ){
+																	if (strlen($1.ValorT)+strlen($3.ValorT) > lenght){
+																		lenght = (strlen($1.ValorT)+strlen($3.ValorT)) *2;
+																		aux = (char*)realloc(aux,sizeof(char)*lenght);
+																	}
+																	sprintf(aux,"%s\nmove-wide V1,V0\n%s\nmove-wide V1,V0 \n",$3.ValorT,$1.ValorT);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																}
+															}
 	;
 
 expression
-	: assignment_expression
-	| expression ',' assignment_expression
-	;
+	: assignment_expression									{ $$.ValorT = $1.ValorT; $$.tipoRR = $1.tipoRR; }
+	| expression ',' assignment_expression					{
+																if($1.tipoRR == 0 && $3.tipoRR == 0){
+																	sprintf(aux,"%s\n%s\n",$1.ValorT,$3.ValorT);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																}else if($1.tipoRR == 0 && $3.tipoRR == 1){
+																	sprintf(aux,"%s\n%s\n",$1.ValorT,$3.ValorT);
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																}else if($1.tipoRR == 2 && $3.tipoRR == 2 ){
+																	if (strlen($1.ValorT)+strlen($3.ValorT) > lenght){
+																		lenght = (strlen($1.ValorT)+strlen($3.ValorT)) *2;
+																		aux = (char*)realloc(aux,sizeof(char)*lenght);
+																	}
+																	sprintf(aux,"%s\n%s\n",$3.ValorT,$1.ValorT);
+																	FaltaPorCond++;
+																	$$.ValorT = strdup(aux);
+																	$$.tipoRR = 2;
+																}
+															}
+	;	
 
 constant_expression
-	: conditional_expression
+	: conditional_expression								{ $$.ValorT = $1.ValorT; $$.tipoRR = $1.tipoRR; }
 	;
 
 declaration
-	: type_specifier ';'
-	| type_specifier init_declarator_list ';'
-	;
-
-init_declarator_list
-	: init_declarator
+	: type_specifier ';'					{ $$.tipoRR = 5; }
+	| type_specifier init_declarator ';'	{ $$.ValorT = $2.ValorT; $$.tipoRR = $2.tipoRR; $$.tipoV = $1.tipoV;
+												symrec* aux = getsymDir($$.valAux);
+												aux->type = $1.tipoV;
+											}
 	;
 
 init_declarator
-	: declarator
+	: declarator								{ $$.ValorT = $1.ValorT; $$.tipoRR = $1.tipoRR; $$.tipoV = $1.tipoV;}
 	| declarator '=' initializer 				{
-													printf("Crear la variable que se esta declarando");
-													printf("Calcular la expresion con la que se inicializara");
-													printf("Mover el resultado de la expresion al registro de la variable");
+													if($1.tipoRR == 0 && $3.tipoRR == 0){
+														sprintf(aux,"move-wide %s,%s \n",$1.ValorT,$3.ValorT);
+														$$.ValorT = strdup(aux);
+														$$.tipoRR = 2;
+														$$.valAux = strdup($1.ValorT);
+													}else if($1.tipoRR == 0 && $3.tipoRR == 1){
+														sprintf(aux,"const-wide/16 V0,%s\nmove-wide %s,V0 \n",$3.ValorT,$1.ValorT);
+														$$.ValorT = strdup(aux);
+														$$.tipoRR = 2;
+														$$.valAux = strdup($1.ValorT);
+													}else if($1.tipoRR == 0 && $3.tipoRR == 2 ){
+														if (strlen($1.ValorT)+strlen($3.ValorT) > lenght){
+															lenght = (strlen($1.ValorT)+strlen($3.ValorT)) *2;
+															aux = (char*)realloc(aux,sizeof(char)*lenght);
+														}
+														sprintf(aux,"%s\nmove-wide V1,V0\n%s\nmove-wide V1,V0 \n",$3.ValorT,$1.ValorT);
+														$$.ValorT = strdup(aux);
+														$$.tipoRR = 2;
+														$$.valAux = strdup($1.ValorT);
+													}
 												}
 	;
 
 type_specifier
-	: CHAR										{ printf("const-string");}
-	| INT 										{ printf("const-wide/16");}
+	: CHAR										{ $$.tipoV = 1; $$.tipoRR = 5;}
+	| INT 										{ $$.tipoRR = 2; $$.tipoRR = 5; }
 	;
 
-declarator
-	: pointer direct_declarator
-	| direct_declarator
+declarator 
+	| direct_declarator							{ $$.ValorT = $1.ValorT; $$.tipoRR = $1.tipoRR; $$.tipoV = $1.tipoV;}
 	;
 
 direct_declarator
-	: IDENTIFIER								{
-													printf("Identificador Tabla de simbolos");
-												}		
-	| '(' declarator ')'
-	| direct_declarator '[' constant_expression ']'
-	| direct_declarator '[' ']'
-	| direct_declarator '(' ')'
+	: IDENTIFIER										{ $$.ValorT = strdup($1->VarDir); $$.tipoRR = 0; }		
+	| '(' declarator ')'								{ $$.ValorT = $2.ValorT; $$.tipoRR = $2.tipoRR; $$.tipoV = $2.tipoV;}
+	| direct_declarator '[' ']'							{ $$.ValorT = $1.ValorT; $$.tipoRR = $1.tipoRR; $$.tipoV = 1;}
+	| direct_declarator '(' ')'							{ $$.ValorT = $1.ValorT; $$.tipoRR = $1.tipoRR; $$.tipoV = 3;}
 	;
-
-pointer
-	: '*'
-	| '*' CONST
-	| '*' pointer
-	| '*' CONST pointer
-	;
-
 
 initializer
-	: assignment_expression
+	: assignment_expression								{ $$.ValorT = strdup($1.ValorT); $$.tipoRR = $1.tipoRR; }
 	;
 
 statement
-	: compound_statement
-	| expression_statement
-	| selection_statement
-	| iteration_statement
-	| jump_statement
+	: compound_statement								{ $$.ValorT = strdup($1.ValorT); $$.tipoRR = $1.tipoRR; }
+	| expression_statement								{ $$.ValorT = strdup($1.ValorT); $$.tipoRR = $1.tipoRR; }
+	| selection_statement								{ $$.ValorT = strdup($1.ValorT); $$.tipoRR = $1.tipoRR; }
+	| iteration_statement								{ $$.ValorT = strdup($1.ValorT); $$.tipoRR = $1.tipoRR; }
+	| jump_statement									{ $$.ValorT = strdup($1.ValorT); $$.tipoRR = $1.tipoRR; }
 	;
 
 compound_statement
 	: '{' '}'
-	| '{' statement_list '}'
-	| '{' declaration_list '}'
-	| '{' declaration_list statement_list '}'
+	| '{' statement_list '}'							{ $$.ValorT = strdup($2.ValorT); $$.tipoRR = $2.tipoRR; }
+	| '{' declaration_list '}'							{ $$.ValorT = strdup($2.ValorT); $$.tipoRR = $2.tipoRR; }
+	| '{' declaration_list statement_list '}'			{ 
+															if (strlen($2.ValorT)+strlen($3.ValorT) > lenght){
+																lenght = (strlen($2.ValorT)+strlen($3.ValorT)) *2;
+																aux = (char*)realloc(aux,sizeof(char)*lenght);
+															}
+															sprintf(aux,"%s\n%s\n",$2.ValorT,$3.ValorT);
+															$$.ValorT = strdup(aux);
+															$$.tipoRR = 2;
+														}
 	;
 
 declaration_list
-	: declaration
-	| declaration_list declaration
+	: declaration										{ $$.ValorT = strdup($1.ValorT); $$.tipoRR = $1.tipoRR; }
+	| declaration_list declaration						{ 
+															if (strlen($1.ValorT)+strlen($2.ValorT) > lenght){
+																lenght = (strlen($1.ValorT)+strlen($2.ValorT)) *2;
+																aux = (char*)realloc(aux,sizeof(char)*lenght);
+															}
+															sprintf(aux,"%s\n%s\n",$1.ValorT,$2.ValorT);
+															$$.ValorT = strdup(aux);
+															$$.tipoRR = 2;
+														}
 	;
 
 statement_list
-	: statement
-	| statement_list statement
+	: statement											{ $$.ValorT = strdup($1.ValorT); $$.tipoRR = $1.tipoRR; }
+	| statement_list statement							{ 
+															if (strlen($1.ValorT)+strlen($2.ValorT) > lenght){
+																lenght = (strlen($1.ValorT)+strlen($2.ValorT)) *2;
+																aux = (char*)realloc(aux,sizeof(char)*lenght);
+															}
+															sprintf(aux,"%s\n%s\n",$1.ValorT,$2.ValorT);
+															$$.ValorT = strdup(aux);
+															$$.tipoRR = 2;
+														}
 	;
 
 expression_statement
