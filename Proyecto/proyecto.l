@@ -1,9 +1,13 @@
 
 %{
 #include <stdio.h>
+#include <string.h>
+#include "TabSimb.h"
 #include "proyecto.tab.h"
 
 void count();
+int Vide = 2;
+char auxVariable[50];
 %}
 
 D			[0-9]
@@ -19,9 +23,26 @@ L			[a-zA-Z_]
 "return"		{ count(); return(RETURN); }
 "while"			{ count(); return(WHILE); }
 
-{L}({L}|{D})*		{ count(); return(IDENTIFIER); }
-L?\"(\\.|[^\\"])*\"	{ count(); return(STRING_LITERAL); }
-{D}+			{ count(); return(CONSTANT); }
+{L}({L}|{D})*		{ 	count(); 
+						symrec *s = getsym( yytext );
+						if (!s){
+							s = putsym( yytext, 0 );
+							sprintf(auxVariable,"V%d",Vide++);
+							s->VarDir =  strdup(auxVariable);
+						}
+
+						yylval.IDENTIFIER = s;
+						
+						return(IDENTIFIER); 
+					}
+L?\"(\\.|[^\\"])*\"	{ 	count(); 
+						yylval.STRING_LITERAL = strdum(yytext);
+						return(STRING_LITERAL); 
+					}
+{D}+			   	{ 	count(); 
+						yylval.CONSTANT = (int) atoi(yytext);;
+						return(CONSTANT); 
+					}
 
 "&&"			{ count(); return(AND_OP); }
 "||"			{ count(); return(OR_OP); }
@@ -47,12 +68,13 @@ L?\"(\\.|[^\\"])*\"	{ count(); return(STRING_LITERAL); }
 "["			{ count(); return('['); }
 "]"			{ count(); return(']'); }
 [ \t\v\n\f]		{ count(); }
-.			{ /* ignore bad characters */ }
 
 %%
 
 int yywrap() {
 	return(1);
+	//.			{ /* ignore bad characters */ }
+
 }
 
 int column = 0;
