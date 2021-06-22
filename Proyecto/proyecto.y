@@ -59,13 +59,23 @@
 %nterm <regla> assignment_expression
 %nterm <regla> expression
 %nterm <regla> constant_expression
-%nterm <regla>
-%nterm <regla>
-%nterm <regla>
-%nterm <regla>
-%nterm <regla>
-
-
+%nterm <regla> declaration
+%nterm <regla> init_declarator
+%nterm <regla> type_specifier
+%nterm <regla> declarator
+%nterm <regla> direct_declarator
+%nterm <regla> initializer
+%nterm <regla> statement
+%nterm <regla> compound_statement
+%nterm <regla> declaration_list
+%nterm <regla> statement_list
+%nterm <regla> expression_statement
+%nterm <regla> selection_statement
+%nterm <regla> iteration_statement
+%nterm <regla> jump_statement
+%nterm <regla> translation_unit
+%nterm <regla> external_declaration
+%nterm <regla> function_definition
 
 %precedence '='
 %left '-' '+'
@@ -637,31 +647,73 @@ iteration_statement
 
 jump_statement
 	: BREAK ';'								{ 
-												//printf("goto %s", indicador); 
+												printf("goto %s", indicador); 
 												printf("Opcode break");
 											}
-	| RETURN ';'							{ printf("return-void"); }
-	| RETURN expression ';'					{ 
-												//printf("return-wide %s ",$1); 
-												printf("Opcode del return");
+	| RETURN ';'							{ sprintf(aux,"return-void"); $$.ValorT = strdup(aux); $$.tipoRR = 2;}
+	| RETURN expression ';'					{	if ( $2.tipoRR == 2 ){
+													if (strlen($2.ValorT)+15 > lenght){
+														lenght = (strlen($2.ValorT)) *2;
+														aux = (char*)realloc(aux,sizeof(char)*lenght);
+													}
+													sprintf(aux,"%s\nmove-wide V1,V0\nreturn-wide V1\n",$2.ValorT);
+													$$.ValorT = strdup(aux);
+													$$.tipoRR = 2;
+												}else if( $2.tipoRR == 0 ){
+													sprintf(aux,"return-wide %s\n",$2.ValorT);
+													$$.ValorT = strdup(aux);
+													$$.tipoRR = 2;
+												}else if( $2.tipoRR == 1 ){
+													sprintf(aux,"const-wide/16 V0,%x \nreturn-wide V0\n",$2.ValorT);
+													$$.ValorT = strdup(aux);
+													$$.tipoRR = 2;
+												}
 											}
 	;
 
 translation_unit
-	: external_declaration
-	| translation_unit external_declaration
+	: external_declaration						{ $$.ValorT = strdup($1.ValorT); $$.tipoRR = $1.tipoRR; }
+	| translation_unit external_declaration		{ 
+													if (strlen($1.ValorT)+strlen($2.ValorT) > lenght){
+														lenght = (strlen($1.ValorT)+strlen($2.ValorT)) *2;
+														aux = (char*)realloc(aux,sizeof(char)*lenght);
+													}
+													sprintf(aux,"%s\n%s\n",$1.ValorT,$2.ValorT);
+													$$.ValorT = strdup(aux);
+													$$.tipoRR = 2;
+												}
 	;
 
 external_declaration
-	: function_definition
-	| declaration
+	: function_definition						{ $$.ValorT = strdup($1.ValorT); $$.tipoRR = $1.tipoRR; }
+	| declaration								{ $$.ValorT = strdup($1.ValorT); $$.tipoRR = $1.tipoRR; }
 	;
 
 function_definition
-	: type_specifier declarator declaration_list compound_statement
-	| type_specifier declarator compound_statement
-	| declarator declaration_list compound_statement
-	| declarator compound_statement
+	: type_specifier declarator declaration_list compound_statement		{ 	printf("\n%s\n",$4.ValorT);
+																			for(int i = 0; i < FaltaPorCond; i++){
+																				printf(":cond_%d",numCond+i);
+																			}
+																			FaltaPorCond = 0; 
+																		}
+	| type_specifier declarator compound_statement						{ 	printf("\n%s\n",$4.ValorT);
+																			for(int i = 0; i < FaltaPorCond; i++){
+																				printf(":cond_%d",numCond+i);
+																			}
+																			FaltaPorCond = 0; 
+																		}
+	| declarator declaration_list compound_statement					{ 	printf("\n%s\n",$4.ValorT);
+																			for(int i = 0; i < FaltaPorCond; i++){
+																				printf(":cond_%d",numCond+i);
+																			}
+																			FaltaPorCond = 0; 
+																		}
+	| declarator compound_statement										{ 	printf("\n%s\n",$4.ValorT);
+																			for(int i = 0; i < FaltaPorCond; i++){
+																				printf(":cond_%d",numCond+i);
+																			}
+																			FaltaPorCond = 0; 
+																		}
 	;
 
 %%
